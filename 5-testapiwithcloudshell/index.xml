@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Testing API with CloudShell on Build CRUD API</title>
+    <link>/5-testapiwithcloudshell/</link>
+    <description>Recent content in Testing API with CloudShell on Build CRUD API</description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <atom:link href="/5-testapiwithcloudshell/index.xml" rel="self" type="application/rss+xml" />
+  </channel>
+</rss>

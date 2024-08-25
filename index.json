@@ -1,0 +1,106 @@
+[
+{
+	"uri": "/",
+	"title": "Session Management",
+	"tags": [],
+	"description": "",
+	"content": "Build CRUD API Overall Your goal in this workshop is to build a very simple CRUD (Create, read, update, delete) API. Starting with DynamoDB, and then creating Lambda function, API Gateway and using Cloudshell to test API.\nContent Introduction Create DynamoDB table Create Lambda function Create HTTP API Test API with CloudShell Clean up resources "
+},
+{
+	"uri": "/3-createlambdafunction/3.1-lambdafunction/",
+	"title": "Create a lambda function",
+	"tags": [],
+	"description": "",
+	"content": "Create a lambda function Sign in to the Lambda console Choose Create function Select Author from scratch For Function name, enter http-crud-function Under Runtime info select Node.js 14.x Under Permissions choose Change default execution role Select Create a new role from AWS policy templates For Role name, enter http-crud-role For Policy templates, choose Simple microservice permissions. This policy grants the Lambda function permission to interact with DynamoDB. Choose Create function This workshop uses a managed policy for simplicity. As a best practice, you should create your own IAM policy to grant the minimum permissions required.\n"
+},
+{
+	"uri": "/4-createhttpapi/4.1-createapi/",
+	"title": "Create HTTP API",
+	"tags": [],
+	"description": "",
+	"content": "Create HTTP API Sign in to the API Gateway console For HTTP API choose Build For API name, enter http-crud-api Choose Next. For Configure routes, choose Next to skip route creation. You create routes later. Review the stage that API Gateway creates for you ($default), and then choose Next. Choose Create. "
+},
+{
+	"uri": "/1-introduce/",
+	"title": "Introduction",
+	"tags": [],
+	"description": "",
+	"content": "CRUD API is representation of connection from client to server(Create, read, update, delete) to query, update the information in database. To accomplish this you will be guided through a few steps. Starting with creating a DynamoDB table using the DynamoDB console, to creating a Lambda function in the AWS Lambda console. Next you will configure an HTTP API using the API Gateway console and last, you will CloudShell it to test your API!\nIf you have little experience with AWS but know your way around at typing commands in a terminal, this workshop is for you!\nArchitectural overview of the API that you create in this tutorial. Clients use an API Gateway HTTP API to invoke a Lambda function. The Lambda function interacts with DynamoDB and then returns a response to clients. When you invoke your HTTP API, API Gateway routes the request to your Lambda function. The Lambda function interacts with DynamoDB, and returns a response to the API Gateway. The API Gateway then returns a response to you.\n"
+},
+{
+	"uri": "/2-createdynamodbtable/",
+	"title": "Create DynamoDB table ",
+	"tags": [],
+	"description": "",
+	"content": "DynamoDB is a fully managed NoSQL database service that provides fast and predictable performance with seamless scalability. DynamoDB lets you offload the administrative burdens of operating and scaling a distributed database so that you don\u0026rsquo;t have to worry about hardware provisioning, setup and configuration, replication, software patching, or cluster scaling. With Amazon DynamoDB, you can create database tables that can store and retrieve any amount of data and serve any level of request traffic. You use an Amazon DynamoDB table to store data for your API. Each item has a unique ID, which we use as the partition key for the table\nCreate DynamoDB table To create a DynamoDB table:\nOpen the DynamoDB console Choose Create table For Table name, enter http-crud-items For Primary key, enter id Choose create After a few seconds your DynamoDB table becomes available. "
+},
+{
+	"uri": "/4-createhttpapi/4.2-createroutes/",
+	"title": "Create routes",
+	"tags": [],
+	"description": "",
+	"content": "Routes are a way to send incoming API requests to backend resources. Routes consist of two parts: an HTTP method and a resource path, for example, GET /items. For this example API, we create four routes: GET /items/{id}\nGET /items\nPUT /items\nDELETE /items/{id}\nCreate Create routes Choose your API http-crud-api On the left panel choose Routes Choose Create. For Method, choose GET For the path, enter /items/{id}. The {id} at the end of the path is a path parameter that API Gateway retrieves from the request path when a client makes a request. Choose Create Repeat steps 3-6 for GET /items, DELETE /items/{id}, and PUT /items. Confirm all routes are created "
+},
+{
+	"uri": "/3-createlambdafunction/3.2-editcode/",
+	"title": "Edit lambda function code",
+	"tags": [],
+	"description": "",
+	"content": "Edit lambda function code After creating the lambda function, scroll down to the console\u0026rsquo;s Code source editor. Open index.mjs, and replace its contents with the following code. import { createRequire } from \u0026#39;module\u0026#39;;\rconst require = createRequire(import.meta.url);\rimport { DynamoDBClient } from \u0026#34;@aws-sdk/client-dynamodb\u0026#34;;\rimport { DeleteCommand, GetCommand, ScanCommand, PutCommand } from \u0026#34;@aws-sdk/lib-dynamodb\u0026#34;;\rconst client = new DynamoDBClient({});\rexport const handler = async (event) =\u0026gt; {\rlet body;\rlet statusCode = 200;\rtry {\rswitch (event.routeKey) {\rcase \u0026#34;DELETE /items/{id}\u0026#34;:\rawait client.send(new DeleteCommand({\rTableName: \u0026#34;http-crud-items\u0026#34;,\rKey: { id: event.pathParameters.id }\r}));\rbody = { message: `Deleted item ${event.pathParameters.id}` };\rbreak;\rcase \u0026#34;GET /items/{id}\u0026#34;:\rconst { Item } = await client.send(new GetCommand({\rTableName: \u0026#34;http-crud-items\u0026#34;,\rKey: { id: event.pathParameters.id }\r}));\rbody = Item || { message: `Item ${event.pathParameters.id} not found` };\rbreak;\rcase \u0026#34;GET /items\u0026#34;:\rconst { Items } = await client.send(new ScanCommand({ TableName: \u0026#34;http-crud-items\u0026#34; }));\rbody = Items || [];\rbreak;\rcase \u0026#34;PUT /items\u0026#34;:\rconst requestJSON = JSON.parse(event.body);\rawait client.send(new PutCommand({\rTableName: \u0026#34;http-crud-items\u0026#34;,\rItem: {\rid: requestJSON.id,\rprice: requestJSON.price,\rname: requestJSON.name\r}\r}));\rbody = { message: `Put item ${requestJSON.id}` };\rbreak;\rdefault:\rthrow new Error(`Unsupported route: \u0026#34;${event.routeKey}\u0026#34;`);\r}\r} catch (err) {\rstatusCode = 400;\rbody = { error: err.message };\r}\rreturn {\rstatusCode,\rbody: JSON.stringify(body),\rheaders: { \u0026#34;Content-Type\u0026#34;: \u0026#34;application/json\u0026#34; }\r};\r}; Choose Deploy to update your function. "
+},
+{
+	"uri": "/3-createlambdafunction/",
+	"title": "Create a lambda function",
+	"tags": [],
+	"description": "",
+	"content": "AWS Lambda is a compute service that lets you run code without provisioning or managing servers. Lambda runs your code only when needed and scales automatically, from a few requests per day to thousands per second. You create a Lambda function for the backend of your API. This Lambda function creates, reads, updates, and deletes (CRUD) items from DynamoDB. The function uses events from API Gateway to determine how to interact with DynamoDB For simplicity this tutorial uses a single Lambda function. As a best practice, you should create separate functions for each route\nContent 3.1. Create a lambda function\n3.2. Modify the lambda function code\n"
+},
+{
+	"uri": "/4-createhttpapi/4.3-createintegration/",
+	"title": "Create an integration",
+	"tags": [],
+	"description": "",
+	"content": "You create an integration to connect a route to backend resources. At a later step you will attach these integrations to a route. For this example API, you create one Lambda integration that you use for all routes.\nCreate an integration Choose your API http-crud-api Choose Integrations Choose Manage integrations and then choose Create Skip Attach this integration to a route. You complete that in a later step. For Integration type, choose Lambda function For Lambda function, enter http-crud-function Choose Create "
+},
+{
+	"uri": "/4-createhttpapi/4.4-attachintegrationtoroutes/",
+	"title": "Attach integration to routes",
+	"tags": [],
+	"description": "",
+	"content": "After you attach the integration to all of the API\u0026rsquo;s routes, your Lambda function is invoked when a client calls any of your routes.\nAttach your integration to routes Choose your API http-crud-api Choose Integrations Choose a route Under Choose an existing integration, choose http-crud-api Choose Attach integration Repeat steps 3-5 for all routes. All routes show that an AWS Lambda integration is attached. Now that you have an HTTP API with routes and integrations, you can test your API. "
+},
+{
+	"uri": "/4-createhttpapi/",
+	"title": "Create HTTP API",
+	"tags": [],
+	"description": "",
+	"content": "API Gateway is a fully managed service that makes it easy for developers to publish, maintain, monitor, secure, and operate APIs at any scale.\nWith API Gateway, you can create RESTful APIs using either HTTP APIs or REST APIs. Together with AWS Lambda, API Gateway forms the app-facing part of the AWS serverless infrastructure.\nHTTP APIs enable you to create RESTful APIs with lower latency and lower cost than REST APIs. You can use HTTP APIs to send requests to AWS Lambda functions or to any publicly routable HTTP endpoint.\nThe HTTP API provides an HTTP endpoint for your Lambda function. In this step, you create an empty API. In the following steps, you configure routes and integrations to connect your API and your Lambda function.\nContent 4.1. Create API\n4.2. Create routes\n4.3. Create integration\n4.4. Attach integration to routes\n"
+},
+{
+	"uri": "/5-testapiwithcloudshell/",
+	"title": "Testing API with CloudShell",
+	"tags": [],
+	"description": "",
+	"content": "In this step, you will test your API using CloudShell. AWS CloudShell is a browser-based, pre-authenticated shell that you can launch directly from the AWS Management Console. You can navigate to CloudShell from the AWS Management Console a few different ways. In this workshop, we will use CloudShell terminal available on AWS console.\nget URL to evoke your API Sign in to the API Gateway console Choose your API Note your API\u0026rsquo;s invoke URL. It appears under Invoke URL on the Details page. The full URL looks like this: https://vi6vlcxo32.execute-api.eu-east-1.amazonaws.com\nCopy your API\u0026rsquo;s invoke URL. Test your API Open the CloudShell console In the following command replace \u0026ldquo;https://vi6vlcxo32.execute-api.eu-east-1.amazonaws.com\u0026rdquo; with your Invoke URL from the previous step to set a variable with the Invoke URL #DO NOT COPY THIS!!!\r#Replace URL with the Invoke URL above\rexport INVOKE_URL=\u0026#34;https://**vi6vlcxo32**.execute-api.eu-west-1.amazonaws.com\u0026#34; Create or update an item. The command includes a request body with the item\u0026rsquo;s ID, price, and name. curl -X \u0026#34;PUT\u0026#34; -H \u0026#34;Content-Type: application/json\u0026#34; -d \u0026#34;{\r\\\u0026#34;id\\\u0026#34;: \\\u0026#34;abcdef234\\\u0026#34;,\r\\\u0026#34;price\\\u0026#34;: 12345,\r\\\u0026#34;name\\\u0026#34;: \\\u0026#34;myitem\\\u0026#34;\r}\u0026#34; $INVOKE_URL/items Check the result on DynamoDB Sign in to the [DynamoDB console] (https://console.aws.amazon.com/DynamoDB/) Select Tables in the left pane Select your table Select Items tab Confirm data from your PUT from previous step Congratulations! You\u0026rsquo;ve just update the table in DynamoDB with an item. Get all items Use the following command to list all items. curl -s $INVOKE_URL/items\nGet an item Use the following command to get an item by its ID. curl -s $INVOKE_URL/items/abcdef234\nDelete an item Use the following command to delete an item. curl -X \u0026quot;DELETE\u0026quot; $INVOKE_URL/items/abcdef234\nGet all items to verify that the item was deleted. curl -s $INVOKE_URL/items "
+},
+{
+	"uri": "/6-cleanup/",
+	"title": "Clean up resources",
+	"tags": [],
+	"description": "",
+	"content": "We will take the following steps to delete the resources we created in this exercise.\ndelete DynamoDB table To delete an DynamoDB table: Open the DynamoDB console Select your table. Choose Delete table. Confirm your choice, and choose Delete. delete HTTP API Sign in to the API Gateway console On the APIs page, select an API. Choose Actions, and then choose Delete. Choose Delete. delete a Lambda function Sign in to the Lambda console On the Functions page, select a function. Choose Actions, and then choose Delete. Choose Delete. "
+},
+{
+	"uri": "/categories/",
+	"title": "Categories",
+	"tags": [],
+	"description": "",
+	"content": ""
+},
+{
+	"uri": "/tags/",
+	"title": "Tags",
+	"tags": [],
+	"description": "",
+	"content": ""
+}]
